@@ -14,4 +14,8 @@ export class UserRepository {
   async findByEmail(email: string) {
     return this.userModel.findOne({ email }).lean();
   }
+
+  async update(id: string, data: any) {
+    return this.userModel.findByIdAndUpdate(id, data, { new: true }).exec();
+  }
 }

@@ -2,6 +2,7 @@ import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { AuthService } from '../../services/auth/auth.service';
 import { LoginDto } from '../../dto/login.dto';
 import { RegisterDto } from '../../dto/register.dto';
+import { VerifyOtpDto } from '../../dto/verify-otp.dto';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 import { User } from '../../../../common/decorators/user.decorator';
 import { HttpCode, HttpStatus } from '@nestjs/common';
@@ -14,6 +15,11 @@ export class AuthController {
   @Post('register')
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
+  }
+
+  @Post('verify-otp')
+  verifyOtp(@Body() dto: VerifyOtpDto) {
+    return this.authService.verifyOtp(dto);
   }
 
   @Post('login')

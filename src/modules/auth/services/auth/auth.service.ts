@@ -3,6 +3,7 @@ import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { UserRepository } from '../../../users/repositories/user.repository';
 import { RegisterDto } from '../../dto/register.dto';
+import { VerifyOtpDto } from '../../dto/verify-otp.dto';
 import { AuthMessages } from '../../enum/auth-messages.enum';
 import { sendEmail } from '../../../../common/utils/sendEmail';
 
@@ -57,11 +58,42 @@ export class AuthService {
     });
   }
 
+  async verifyOtp(dto: VerifyOtpDto) {
+    const user = await this.userRepository.findByEmail(dto.email);
+    if (!user) {
+      throw new BadRequestException(AuthMessages.USER_NOT_FOUND);
+    }
+
+    if (user.otp !== dto.otp) {
+      throw new BadRequestException(AuthMessages.OTP_INVALID);
+    }
+
+    if (user.otpExpires && new Date() > user.otpExpires) {
+      throw new BadRequestException(AuthMessages.OTP_EXPIRED);
+    }
+
+    await this.userRepository.update(user._id.toString(), {
+      isVerified: true,
+      otp: null,
+      otpExpires: null,
+    });
+
+    return {
+      message: 'Account verified successfully',
+      ...this.generateToken(user),
+    };
+  }
+
   async login(dto: any) {
     const user = await this.userRepository.findByEmail(dto.email);
     if (!user) {
       throw new UnauthorizedException(AuthMessages.INVALID_CREDENTIALS);
     }
+
+    if (!user.isVerified) {
+      throw new BadRequestException(AuthMessages.ACCOUNT_NOT_VERIFIED);
+    }
+
     const isMatch = await bcrypt.compare(dto.password, user.password);
     if (!isMatch) {
       throw new UnauthorizedException(AuthMessages.INVALID_CREDENTIALS);
