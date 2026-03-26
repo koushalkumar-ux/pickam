@@ -14,23 +14,31 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Internal server error';
+    let errors: string[] = [];
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
-
       const exceptionResponse = exception.getResponse();
 
       if (typeof exceptionResponse === 'string') {
         message = exceptionResponse;
       } else if (typeof exceptionResponse === 'object') {
-        message =
-          (exceptionResponse as any).message || exception.message;
+        const res: any = exceptionResponse;
+
+        // ✅ Handle validation errors (array)
+        if (Array.isArray(res.message)) {
+          message = 'Validation failed';
+          errors = res.message;
+        } else {
+          message = res.message || exception.message;
+        }
       }
     }
 
     response.status(status).json({
       success: false,
       message,
+      errors,
       data: null,
     });
   }

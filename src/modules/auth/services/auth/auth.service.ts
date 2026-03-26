@@ -2,6 +2,9 @@ import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { UserRepository } from '../../../users/repositories/user.repository';
+import { RegisterDto } from '../../dto/register.dto';
+import { AuthMessages } from '../../enum/auth-messages.enum';
+import { sendEmail } from '../../../../common/utils/sendEmail';
 
 @Injectable()
 export class AuthService {
@@ -10,31 +13,59 @@ export class AuthService {
     private userRepository: UserRepository,
   ) {}
 
-  async register(dto: any) {
+  async register(dto: RegisterDto) {
+    if (dto.password !== dto.confirmPassword) {
+      throw new BadRequestException(AuthMessages.PASSWORDS_DO_NOT_MATCH);
+    }
+
     const existingUser = await this.userRepository.findByEmail(dto.email);
     if (existingUser) {
-      throw new BadRequestException('User already exists');
+      throw new BadRequestException(AuthMessages.USER_ALREADY_EXISTS);
     }
+
     const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
+
     const user = await this.userRepository.create({
+      fullname: dto.fullname,
+      phone: dto.phone,
+      phoneCode: dto.phoneCode,
+      gender: dto.gender,
+      dob: dto.dob,
       email: dto.email,
       password: hashedPassword,
+      otp,
+      otpExpires,
+      isVerified: false,
     });
-    return this.generateToken(user);
+
+    await this.sendOtpEmail(user.email, otp);
+
+    return {
+      message: 'Registration successful. Please verify your email with the OTP sent.',
+      email: user.email,
+    };
+  }
+
+  private async sendOtpEmail(email: string, otp: string) {
+    await sendEmail({
+      to: email,
+      subject: 'Verify Your Account - OTP',
+      text: `Your OTP for account verification is: ${otp}. It will expire in 10 minutes.`,
+      html: `<h3>Account Verification</h3><p>Your OTP is: <b>${otp}</b></p><p>It will expire in 10 minutes.</p>`,
+    });
   }
 
   async login(dto: any) {
     const user = await this.userRepository.findByEmail(dto.email);
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException(AuthMessages.INVALID_CREDENTIALS);
     }
-
     const isMatch = await bcrypt.compare(dto.password, user.password);
-
     if (!isMatch) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException(AuthMessages.INVALID_CREDENTIALS);
     }
-
     return this.generateToken(user);
   }
 
