@@ -3,7 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthModule } from './modules/auth/v1/auth.module';
-import { UsersModule } from './modules/users/users.module';
+import { UsersModule } from './modules/users/v1/users.module';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 
 @Module({

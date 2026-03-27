@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
-import { UserRepository } from '../../../users/repositories/user.repository';
+import { UserRepository } from '../../../users/v1/repositories/user.repository';
 import { RegisterDto } from '../dto/register.dto';
 import { VerifyOtpDto } from '../dto/verify-otp.dto';
 import { AuthMessages } from '../enum/auth-messages.enum';
