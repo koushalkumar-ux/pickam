@@ -2,9 +2,9 @@ import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { UserRepository } from '../../../users/repositories/user.repository';
-import { RegisterDto } from '../../dto/register.dto';
-import { VerifyOtpDto } from '../../dto/verify-otp.dto';
-import { AuthMessages } from '../../enum/auth-messages.enum';
+import { RegisterDto } from '../dto/register.dto';
+import { VerifyOtpDto } from '../dto/verify-otp.dto';
+import { AuthMessages } from '../enum/auth-messages.enum';
 import { sendEmail } from '../../../../common/utils/sendEmail';
 
 @Injectable()
@@ -44,7 +44,7 @@ export class AuthService {
     await this.sendOtpEmail(user.email, otp);
 
     return {
-      message: 'Registration successful. Please verify your email with the OTP sent.',
+      message: AuthMessages.REGISTER_SUCCESS,
       email: user.email,
     };
   }
@@ -79,7 +79,7 @@ export class AuthService {
     });
 
     return {
-      message: 'Account verified successfully',
+      message: AuthMessages.VERIFY_SUCCESS,
       ...this.generateToken(user),
     };
   }
@@ -98,7 +98,10 @@ export class AuthService {
     if (!isMatch) {
       throw new UnauthorizedException(AuthMessages.INVALID_CREDENTIALS);
     }
-    return this.generateToken(user);
+    return {
+      message: AuthMessages.LOGIN_SUCCESS,
+      ...this.generateToken(user),
+    };
   }
 
   generateToken(user: any) {

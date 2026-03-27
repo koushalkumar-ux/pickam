@@ -6,4 +6,7 @@ export enum AuthMessages {
   OTP_EXPIRED = 'OTP has expired',
   USER_NOT_FOUND = 'User not found',
   ACCOUNT_NOT_VERIFIED = 'Account not verified. Please check your email for the OTP.',
+  REGISTER_SUCCESS = 'Registration successful. Please verify your email with the OTP sent.',
+  VERIFY_SUCCESS = 'Account verified successfully',
+  LOGIN_SUCCESS = 'Login successful',
 }
