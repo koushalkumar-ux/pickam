@@ -55,9 +55,9 @@ export class AuthService {
   private async sendOtpEmail(email: string, otp: string) {
     await sendEmail({
       to: email,
-      subject: 'Verify Your Account - OTP',
-      text: `Your OTP for account verification is: ${otp}. It will expire in 10 minutes.`,
-      html: `<h3>Account Verification</h3><p>Your OTP is: <b>${otp}</b></p><p>It will expire in 10 minutes.</p>`,
+      subject: 'Verify Your Account - PickAm',
+      template: 'otp',
+      context: { otp },
     });
   }
 

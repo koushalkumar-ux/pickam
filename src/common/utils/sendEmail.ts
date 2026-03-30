@@ -1,17 +1,30 @@
 import * as nodemailer from 'nodemailer';
-
-export interface EmailOptions {
-  to: string;
-  subject: string;
-  text: string;
-  html?: string;
-}
+import * as fs from 'fs';
+import * as path from 'path';
+import * as handlebars from 'handlebars';
+import { EmailOptions } from '../interface/common.interface';
 
 /**
  * Generic utility to send emails via SMTP.
  */
 export const sendEmail = async (options: EmailOptions): Promise<void> => {
   const host = process.env.SMTP_HOST;
+
+  let htmlBody = options.html;
+  let textBody = options.text;
+
+  if (options.template) {
+    const templatePath = path.join(__dirname, '..', 'templates', `${options.template}.hbs`);
+    try {
+      const templateSource = fs.readFileSync(templatePath, 'utf8');
+      const compiledTemplate = handlebars.compile(templateSource);
+      htmlBody = compiledTemplate(options.context || {});
+      textBody = textBody || htmlBody.replace(/<[^>]*>?/gm, ''); // Simple fallback for text-only clients
+    } catch (error) {
+      console.error(`Email Template Error: Could not load template ${options.template}`, error);
+    }
+  }
+
   if (!host) {
     console.error('Email Dispatch Error: SMTP_HOST is not defined in environment variables.');
     throw new Error('Internal Server Error: Email configuration missing.');
@@ -31,8 +44,8 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
     from: `"${process.env.FROM_NAME || 'PickAm'}" <${process.env.FROM_EMAIL}>`,
     to: options.to,
     subject: options.subject,
-    text: options.text,
-    html: options.html,
+    text: textBody || '',
+    html: htmlBody,
   };
 
   try {
