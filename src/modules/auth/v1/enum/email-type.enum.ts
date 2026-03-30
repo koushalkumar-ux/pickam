@@ -1,0 +1,4 @@
+export enum EmailType {
+  VERIFY_OTP = 'VERIFY_OTP',
+  FORGOT_PASSWORD = 'FORGOT_PASSWORD',
+}

@@ -4,7 +4,10 @@ import { JwtService } from '@nestjs/jwt';
 import { UserRepository } from '../../../users/v1/repositories/user.repository';
 import { RegisterDto } from '../dto/register.dto';
 import { VerifyOtpDto } from '../dto/verify-otp.dto';
-import { AuthMessages } from '../enum/auth-messages.enum';
+import { LoginDto } from '../dto/login.dto';
+import { ForgotPasswordDto } from '../dto/forgotPassword.dto';
+import { ResetPasswordDto } from '../dto/resetPassword.dto';
+import { AuthMessages } from '../enum/auth-messages.enum'; // Confirmed importing from v1 location
 import { sendEmail } from '../../../../common/utils/sendEmail';
 
 @Injectable()
@@ -12,7 +15,7 @@ export class AuthService {
   constructor(
     private jwtService: JwtService,
     private userRepository: UserRepository,
-  ) {}
+  ) { }
 
   async register(dto: RegisterDto) {
     if (dto.password !== dto.confirmPassword) {
@@ -84,7 +87,7 @@ export class AuthService {
     };
   }
 
-  async login(dto: any) {
+  async login(dto: LoginDto) {
     const user = await this.userRepository.findByEmail(dto.email);
     if (!user) {
       throw new UnauthorizedException(AuthMessages.INVALID_CREDENTIALS);
@@ -109,6 +112,92 @@ export class AuthService {
 
     return {
       access_token: this.jwtService.sign(payload),
+    };
+  }
+
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const user = await this.userRepository.findByEmail(dto.email);
+    if (!user) {
+      throw new BadRequestException(AuthMessages.USER_NOT_FOUND);
+    }
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
+
+    // Corrected: Persist the OTP and expiry to the database
+    await this.userRepository.update(user._id.toString(), {
+      otp,
+      otpExpires,
+    });
+
+    await this.sendOtpEmail(user.email, otp);
+
+    return {
+      message: AuthMessages.FORGOT_PASSWORD_SUCCESS,
+      email: user.email,
+    };
+  }
+
+  async verifyResetOtp(dto: VerifyOtpDto) {
+    const user = await this.userRepository.findByEmail(dto.email);
+    if (!user) {
+      throw new BadRequestException(AuthMessages.USER_NOT_FOUND);
+    }
+
+    if (user.otp !== dto.otp) {
+      throw new BadRequestException(AuthMessages.OTP_INVALID);
+    }
+
+    if (user.otpExpires && new Date() > user.otpExpires) {
+      throw new BadRequestException(AuthMessages.OTP_EXPIRED);
+    }
+
+    // Clear the OTP so it cannot be used again
+    await this.userRepository.update(user._id.toString(), {
+      otp: null,
+      otpExpires: null,
+    });
+
+    // Generate a short-lived reset token (expires in 15 minutes)
+    const resetToken = this.jwtService.sign(
+      { sub: user._id.toString(), email: user.email, action: 'password_reset' },
+      { expiresIn: '15m' },
+    );
+
+    return {
+      message: 'OTP verified successfully.',
+      email: user.email,
+      resetToken,
+    };
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    if (dto.password !== dto.confirmPassword) {
+      throw new BadRequestException(AuthMessages.PASSWORDS_DO_NOT_MATCH);
+    }
+
+    let payload: any;
+    try {
+      payload = this.jwtService.verify(dto.resetToken);
+      if (payload.action !== 'password_reset') {
+        throw new Error();
+      }
+    } catch (error) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+
+    const user = await this.userRepository.findByEmail(payload.email);
+    if (!user) {
+      throw new BadRequestException(AuthMessages.USER_NOT_FOUND);
+    }
+
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+
+    await this.userRepository.update(user._id.toString(), {
+      password: hashedPassword,
+    });
+
+    return {
+      message: 'Password reset successful. Please login with your new password.',
     };
   }
 }

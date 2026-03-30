@@ -4,7 +4,7 @@ import {
   IsEmail,
   IsNotEmpty,
   IsString,
-  MinLength
+  MinLength,Equals
 } from 'class-validator';
 
 export class RegisterDto {
@@ -43,5 +43,6 @@ export class RegisterDto {
   isVerified: boolean = false;
 
   @IsBoolean()
-  termsAndConditions: boolean = false;
+  @Equals(true, { message: 'You must accept terms and conditions' })
+  termsAndConditions: boolean;
 }
