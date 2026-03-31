@@ -6,7 +6,7 @@ import { ForgotPasswordDto } from '../dto/forgotPassword.dto';
 import { ResetPasswordDto } from '../dto/resetPassword.dto';
 import { VerifyOtpDto } from '../dto/verify-otp.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
-import { User } from '../../../../common/decorators/user.decorator';
+import { User } from '../../../../../common/decorators/user.decorator';
 import { HttpCode, HttpStatus } from '@nestjs/common';
 
 

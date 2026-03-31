@@ -7,8 +7,8 @@ import { VerifyOtpDto } from '../dto/verify-otp.dto';
 import { LoginDto } from '../dto/login.dto';
 import { ForgotPasswordDto } from '../dto/forgotPassword.dto';
 import { ResetPasswordDto } from '../dto/resetPassword.dto';
-import { AuthMessages } from '../enum/auth-messages.enum'; // Confirmed importing from v1 location
-import { sendEmail } from '../../../../common/utils/sendEmail';
+import { AuthMessages } from '../enum/auth-messages.enum';
+import { sendEmail } from '../../../../../common/utils/sendEmail';
 
 @Injectable()
 export class AuthService {
@@ -44,8 +44,10 @@ export class AuthService {
       isVerified: false,
     });
 
-    await this.sendOtpEmail(user.email, otp);
-
+    this.sendOtpEmail(user.email, otp).catch(err => {
+      console.error('Email failed:', err);
+    });
+    
     return {
       message: AuthMessages.REGISTER_SUCCESS,
       email: user.email,
@@ -114,22 +116,36 @@ export class AuthService {
       access_token: this.jwtService.sign(payload),
     };
   }
-
   async forgotPassword(dto: ForgotPasswordDto) {
     const user = await this.userRepository.findByEmail(dto.email);
-    if (!user) {
-      throw new BadRequestException(AuthMessages.USER_NOT_FOUND);
-    }
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
 
-    // Corrected: Persist the OTP and expiry to the database
+    // ✅ Prevent enumeration
+    if (!user) {
+      return {
+        message: AuthMessages.FORGOT_PASSWORD_SUCCESS,
+      };
+    }
+
+    // ✅ Prevent spam
+    if (user.otpExpires && user.otpExpires > new Date()) {
+      throw new BadRequestException('OTP already sent. Try again later.');
+    }
+
+    // ✅ Secure OTP
+    const { randomInt } = await import('crypto');
+    const otp = randomInt(100000, 999999).toString();
+
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+
     await this.userRepository.update(user._id.toString(), {
       otp,
       otpExpires,
     });
 
-    await this.sendOtpEmail(user.email, otp);
+    // ✅ Non-blocking email
+    this.sendOtpEmail(user.email, otp).catch(err => {
+      console.error('Email failed:', err);
+    });
 
     return {
       message: AuthMessages.FORGOT_PASSWORD_SUCCESS,

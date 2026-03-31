@@ -1,15 +1,15 @@
+import dotenv from 'dotenv';
+dotenv.config();
 import * as nodemailer from 'nodemailer';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as handlebars from 'handlebars';
 import { EmailOptions } from '../interface/common.interface';
-
+import { emailConfig } from '../../config/email.config';
 /**
  * Generic utility to send emails via SMTP.
  */
 export const sendEmail = async (options: EmailOptions): Promise<void> => {
-  const host = process.env.SMTP_HOST;
-
   let htmlBody = options.html;
   let textBody = options.text;
 
@@ -25,23 +25,20 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
     }
   }
 
-  if (!host) {
+  if (!emailConfig.host) {
     console.error('Email Dispatch Error: SMTP_HOST is not defined in environment variables.');
     throw new Error('Internal Server Error: Email configuration missing.');
   }
 
   const transporter = nodemailer.createTransport({
-    host: host,
-    port: parseInt(process.env.SMTP_PORT || '587', 10),
-    secure: process.env.SMTP_PORT === '465', // true for 465, false for other ports
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
+    host: emailConfig.host,
+    port: emailConfig.port,
+    secure: emailConfig.secure,
+    auth: emailConfig.auth,
   });
 
   const mailOptions = {
-    from: `"${process.env.FROM_NAME || 'PickAm'}" <${process.env.FROM_EMAIL}>`,
+    from: `"${emailConfig.from.name}" <${emailConfig.from.email}>`,
     to: options.to,
     subject: options.subject,
     text: textBody || '',
@@ -50,6 +47,7 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
 
   try {
     await transporter.sendMail(mailOptions);
+    console.log("send email to=>", options.to)
   } catch (error) {
     console.error('Email Dispatch Error:', error);
     throw error;
