@@ -124,17 +124,6 @@ export class AdminService {
     return admin;
   }
 
-  // ✅ Delete Admin
-  async deleteAdmin(adminId: string): Promise<{ message: string }> {
-    const admin = await this.adminRepository.findByIdAndDelete(adminId);
-
-    if (!admin) {
-      throw new NotFoundException('Admin not found');
-    }
-
-    return { message: 'Admin deleted successfully' };
-  }
-
   // ✅ Forgot Password Logic
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
     const admin = await this.adminRepository.findByEmail(forgotPasswordDto.email);
