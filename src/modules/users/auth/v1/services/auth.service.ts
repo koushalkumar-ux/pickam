@@ -9,13 +9,18 @@ import { ForgotPasswordDto } from '../dto/forgotPassword.dto';
 import { ResetPasswordDto } from '../dto/resetPassword.dto';
 import { AuthMessages } from '../enum/auth-messages.enum';
 import { sendEmail } from '../../../../../common/utils/sendEmail';
+import { DbLoggerService } from '../../../../logger/services/db-logger.service';
+import { RateLimit } from '../../../../../common/decorators/rate-limit.decorator';
 
 @Injectable()
 export class AuthService {
   constructor(
     private jwtService: JwtService,
     private userRepository: UserRepository,
-  ) { }
+    private logger: DbLoggerService,
+  ) {
+    this.logger.setModule('AuthModule');
+  }
 
   async register(dto: RegisterDto) {
     if (dto.password !== dto.confirmPassword) {
@@ -45,9 +50,9 @@ export class AuthService {
     });
 
     this.sendOtpEmail(user.email, otp).catch(err => {
-      console.error('Email failed:', err);
+      this.logger.error('Registration OTP Email failed', err.stack, 'AuthService.register');
     });
-    
+
     return {
       message: AuthMessages.REGISTER_SUCCESS,
       email: user.email,
@@ -55,7 +60,7 @@ export class AuthService {
   }
 
   private async sendOtpEmail(email: string, otp: string) {
-    await sendEmail({
+    return await sendEmail({
       to: email,
       subject: 'Verify Your Account - PickAm',
       template: 'otp',
@@ -116,6 +121,8 @@ export class AuthService {
       access_token: this.jwtService.sign(payload),
     };
   }
+
+  @RateLimit({ capacity: 3, refillRate: 1 / (60 * 1000) }) // 3 requests per minute
   async forgotPassword(dto: ForgotPasswordDto) {
     const user = await this.userRepository.findByEmail(dto.email);
 
@@ -144,7 +151,7 @@ export class AuthService {
 
     // ✅ Non-blocking email
     this.sendOtpEmail(user.email, otp).catch(err => {
-      console.error('Email failed:', err);
+      this.logger.error('Forgot Password OTP Email failed', err.stack, 'AuthService.forgotPassword');
     });
 
     return {

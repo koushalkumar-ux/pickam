@@ -5,11 +5,14 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { UsersModule } from '../../users/v1/users.module';
+import { LoggerModule } from '../../../logger/logger.module';
+
 
 @Module({
   imports: [
     ConfigModule,
     UsersModule,
+    LoggerModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
