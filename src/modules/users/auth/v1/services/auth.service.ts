@@ -96,6 +96,7 @@ export class AuthService {
 
   async login(dto: LoginDto) {
     const user = await this.userRepository.findByEmail(dto.email);
+
     if (!user) {
       throw new UnauthorizedException(AuthMessages.INVALID_CREDENTIALS);
     }

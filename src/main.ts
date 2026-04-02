@@ -23,7 +23,7 @@ async function bootstrap() {
     whitelist: true,
     transform: true,
   }));
-  // app.useGlobalFilters(new GlobalExceptionFilter());
+  app.useGlobalFilters(new GlobalExceptionFilter());
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();
