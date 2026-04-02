@@ -8,7 +8,8 @@ import { VerifyOtpDto } from '../dto/verify-otp.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { User } from '../../../../../common/decorators/user.decorator';
 import { HttpCode, HttpStatus } from '@nestjs/common';
-
+import { RateLimiterGuard } from '../../../../../common/guard/rate-limiter.guard';
+import { RateLimit } from 'src/common/decorators/rate-limit.decorator';
 
 @Controller({
   path: 'auth',
@@ -16,7 +17,7 @@ import { HttpCode, HttpStatus } from '@nestjs/common';
 })
 
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) { }
 
   @Post('register')
   register(@Body() dto: RegisterDto) {
@@ -28,9 +29,15 @@ export class AuthController {
     return this.authService.verifyOtp(dto);
   }
 
+  // @UseGuards(RateLimiterGuard)
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @RateLimit({
+    capacity: 10,
+    refillRate: 1 / 60000, // 1 token per 60 seconds
+  }) //After consuming tokens, the system should regain 1 token per 60 seconds
   login(@Body() dto: LoginDto) {
+    console.log("login called")
     return this.authService.login(dto);
   }
 
