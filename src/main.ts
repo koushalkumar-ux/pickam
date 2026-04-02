@@ -7,7 +7,11 @@ import { join } from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  
+  app.use((req:any, res:any, next:any) => {
+    console.log(`[Request] ${req.method} ${req.url}`);
+    next();
+  });
+
   app.setBaseViewsDir(join(__dirname, 'common', 'templates'));
   app.setViewEngine('hbs');
 

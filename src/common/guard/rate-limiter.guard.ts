@@ -37,18 +37,18 @@ export class RateLimiterGuard implements CanActivate {
     const duration = Date.now() - start;
 
     // 🔥 FULL DEBUG LOG
-    console.log(`
-[RateLimit]
-Key        : ${key}
-Allowed    : ${allowed}
-Remaining  : ${remaining} tokens
-Refilled   : ${refill} tokens
-Elapsed    : ${elapsed} ms
-Capacity   : ${options.capacity}
-RefillRate : ${options.refillRate}
-Exec Time  : ${duration} ms
------------------------------------
-    `);
+//     console.log(`
+// [RateLimit]
+// Key        : ${key}
+// Allowed    : ${allowed}
+// Remaining  : ${remaining} tokens
+// Refilled   : ${refill} tokens
+// Elapsed    : ${elapsed} ms
+// Capacity   : ${options.capacity}
+// RefillRate : ${options.refillRate}
+// Exec Time  : ${duration} ms
+// -----------------------------------
+//     `);
 
     if (!allowed) {
       throw new HttpException(
