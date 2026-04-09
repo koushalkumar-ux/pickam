@@ -15,7 +15,19 @@ export class UserRepository {
     return this.userModel.findOne({ email }).lean();
   }
 
+  async findById(id: string) {
+    return this.userModel.findById(id).lean();
+  }
+
+  async findAll() {
+    return this.userModel.find().lean();
+  }
+
   async update(id: string, data: any) {
-    return this.userModel.findByIdAndUpdate(id, data, { new: true }).exec();
+    return this.userModel.findByIdAndUpdate(id, data, { new: true }).lean();
+  }
+
+  async delete(id: string) {
+    return this.userModel.findByIdAndDelete(id).lean();
   }
 }
