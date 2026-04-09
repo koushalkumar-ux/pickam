@@ -33,7 +33,37 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     this.client.disconnect();
   }
 
+  /**
+   * Get a value from Redis
+   */
+  async get(key: string): Promise<string | null> {
+    return this.client.get(key);
+  }
 
+  /**
+   * Set a value in Redis with optional TTL (seconds)
+   */
+  async set(key: string, value: string, ttlSeconds?: number): Promise<'OK'> {
+    if (ttlSeconds) {
+      return this.client.set(key, value, 'EX', ttlSeconds);
+    }
+    return this.client.set(key, value);
+  }
+
+  /**
+   * Delete a key from Redis (Manual Invalidation)
+   */
+  async del(key: string): Promise<number> {
+    return this.client.del(key);
+  }
+
+  /**
+   * Check if a key exists
+   */
+  async exists(key: string): Promise<boolean> {
+    const result = await this.client.exists(key);
+    return result === 1;
+  }
 
   /**
    * Token Bucket Logic in Lua
@@ -45,49 +75,49 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     const script = `
                   local key = KEYS[1]
 
-local capacity = tonumber(ARGV[1])
-local refill_rate = tonumber(ARGV[2]) -- tokens per ms
-local now = tonumber(ARGV[3])
+                  local capacity = tonumber(ARGV[1])
+                  local refill_rate = tonumber(ARGV[2]) -- tokens per ms
+                  local now = tonumber(ARGV[3])
 
--- Get stored values
-local bucket = redis.call('HMGET', key, 'tokens', 'last_refill')
-local tokens = tonumber(bucket[1])
-local last_refill = tonumber(bucket[2])
+                  -- Get stored values
+                  local bucket = redis.call('HMGET', key, 'tokens', 'last_refill')
+                  local tokens = tonumber(bucket[1])
+                  local last_refill = tonumber(bucket[2])
 
--- Initialize if first request
-if not tokens then
-  tokens = capacity
-  last_refill = now
-end
+                  -- Initialize if first request
+                  if not tokens then
+                    tokens = capacity
+                    last_refill = now
+                  end
 
--- Calculate elapsed time
-local elapsed = math.max(0, now - last_refill)
+                  -- Calculate elapsed time
+                  local elapsed = math.max(0, now - last_refill)
 
--- Calculate refill
-local refill = elapsed * refill_rate
+                  -- Calculate refill
+                  local refill = elapsed * refill_rate
 
--- Add refill to tokens
-tokens = math.min(capacity, tokens + refill)
+                  -- Add refill to tokens
+                  tokens = math.min(capacity, tokens + refill)
 
--- Update timestamp (IMPORTANT)
-last_refill = now
+                  -- Update timestamp (IMPORTANT)
+                  last_refill = now
 
-local allowed = 0
+                  local allowed = 0
 
--- Consume token if available
-if tokens >= 1 then
-  tokens = tokens - 1
-  allowed = 1
-end
+                  -- Consume token if available
+                  if tokens >= 1 then
+                    tokens = tokens - 1
+                    allowed = 1
+                  end
 
--- Persist updated state
-redis.call('HMSET', key, 'tokens', tokens, 'last_refill', last_refill)
+                  -- Persist updated state
+                  redis.call('HMSET', key, 'tokens', tokens, 'last_refill', last_refill)
 
--- Set expiry (auto cleanup)
-redis.call('PEXPIRE', key, math.ceil(capacity / refill_rate))
+                  -- Set expiry (auto cleanup)
+                  redis.call('PEXPIRE', key, math.ceil(capacity / refill_rate))
 
--- Return full debug info
-return {allowed, tokens, elapsed, refill}
+                  -- Return full debug info
+                  return {allowed, tokens, elapsed, refill}
     `;
 
     const [allowed, remaining, elapsed, refill] =

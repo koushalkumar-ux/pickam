@@ -19,6 +19,12 @@ import { RateLimit } from 'src/common/decorators/rate-limit.decorator';
 export class AuthController {
   constructor(private authService: AuthService) { }
 
+  @Get('test-connection')
+  @HttpCode(HttpStatus.OK)
+  testConnection() {
+    return { status: 'success', message: 'API is reachable', timestamp: new Date().toISOString() };
+  }
+
   @Post('register')
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
@@ -29,7 +35,7 @@ export class AuthController {
     return this.authService.verifyOtp(dto);
   }
 
-  // @UseGuards(RateLimiterGuard)
+  
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @RateLimit({
@@ -37,7 +43,6 @@ export class AuthController {
     refillRate: 1 / 60000, // 1 token per 60 seconds
   }) //After consuming tokens, the system should regain 1 token per 60 seconds
   login(@Body() dto: LoginDto) {
-    console.log("login called")
     return this.authService.login(dto);
   }
 

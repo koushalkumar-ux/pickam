@@ -11,6 +11,7 @@ import { AuthMessages } from '../enum/auth-messages.enum';
 import { sendEmail } from '../../../../../common/utils/sendEmail';
 import { DbLoggerService } from '../../../../logger/services/db-logger.service';
 import { RateLimit } from '../../../../../common/decorators/rate-limit.decorator';
+import { RedisService } from 'src/infrastructure/redis/service/redis.service';
 
 @Injectable()
 export class AuthService {
@@ -18,6 +19,7 @@ export class AuthService {
     private jwtService: JwtService,
     private userRepository: UserRepository,
     private logger: DbLoggerService,
+    private redisService: RedisService,
   ) {
     this.logger.setModule('AuthModule');
   }
@@ -87,6 +89,9 @@ export class AuthService {
       otp: null,
       otpExpires: null,
     });
+    
+    // Invalidate the cache for this user
+    await this.redisService.del(`user:email:${user.email}`);
 
     return {
       message: AuthMessages.VERIFY_SUCCESS,
@@ -95,8 +100,22 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    const user = await this.userRepository.findByEmail(dto.email);
+    const cacheKey = `user:email:${dto.email}`;
 
+    // 1. Try to get from Redis
+    const cachedUser = await this.redisService.get(cacheKey);
+    let user: any;
+
+    if (cachedUser) {
+      user = JSON.parse(cachedUser);
+    } else {
+      // 2. Fallback to Database
+      user = await this.userRepository.findByEmail(dto.email);
+      if (user) {
+        // 3. Store in Redis for next time (e.g., 1 hour TTL)
+        await this.redisService.set(cacheKey, JSON.stringify(user), 3600);
+      }
+    }
     if (!user) {
       throw new UnauthorizedException(AuthMessages.INVALID_CREDENTIALS);
     }
@@ -149,6 +168,9 @@ export class AuthService {
       otp,
       otpExpires,
     });
+    
+    // Invalidate the cache for this user
+    await this.redisService.del(`user:email:${user.email}`);
 
     // ✅ Non-blocking email
     this.sendOtpEmail(user.email, otp).catch(err => {
@@ -180,6 +202,9 @@ export class AuthService {
       otp: null,
       otpExpires: null,
     });
+    
+    // Invalidate the cache for this user
+    await this.redisService.del(`user:email:${user.email}`);
 
     // Generate a short-lived reset token (expires in 15 minutes)
     const resetToken = this.jwtService.sign(
@@ -219,6 +244,9 @@ export class AuthService {
     await this.userRepository.update(user._id.toString(), {
       password: hashedPassword,
     });
+    
+    // Invalidate the cache for this user
+    await this.redisService.del(`user:email:${user.email}`);
 
     return {
       message: 'Password reset successful. Please login with your new password.',
