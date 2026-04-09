@@ -2,7 +2,7 @@ import { Module, Global } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { DbLoggerService } from './services/db-logger.service';
 import { LogRepository } from '../../modules/users/auth/v1/repositories/log.repository';
-import { Log, LogSchema } from '../../modules/users/auth/v1/schemas/log.schema';
+import { Log, LogSchema } from './schemas/log.schema';
 
 @Global()
 @Module({

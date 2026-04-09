@@ -1,14 +1,7 @@
-import {
-  IsBoolean,
-  IsDateString,
-  IsEmail,
-  IsNotEmpty,
-  IsString,
-  MinLength,Equals
-} from 'class-validator';
+import { IsDateString, IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class RegisterDto {
+export class CreateUserDto {
   @ApiProperty({ example: 'John Doe' })
   @IsString()
   @IsNotEmpty()
@@ -35,25 +28,10 @@ export class RegisterDto {
 
   @ApiProperty({ example: '2000-01-01' })
   @IsDateString()
-  @IsNotEmpty()
   dob: string;
 
   @ApiProperty({ example: 'StrongPass123' })
   @IsString()
   @MinLength(6)
   password: string;
-
-  @ApiProperty({ example: 'StrongPass123' })
-  @IsString()
-  @IsNotEmpty()
-  confirmPassword: string;
-
-  @ApiProperty({ example: false, default: false })
-  @IsBoolean()
-  isVerified: boolean = false;
-
-  @ApiProperty({ example: true })
-  @IsBoolean()
-  @Equals(true, { message: 'You must accept terms and conditions' })
-  termsAndConditions: boolean;
 }
