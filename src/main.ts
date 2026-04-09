@@ -7,11 +7,17 @@ import { join } from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  app.use((req:any, res:any, next:any) => {
+  app.use((req: any, res: any, next: any) => {
     console.log(`[Request] ${req.method} ${req.url}`);
     next();
   });
-
+  app.enableCors({
+    origin: "http://localhost:5173", // your frontend URL
+    credentials: true,
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
+    allowedHeaders: "Content-Type, Authorization",
+  });
+  
   app.setBaseViewsDir(join(__dirname, 'common', 'templates'));
   app.setViewEngine('hbs');
 
