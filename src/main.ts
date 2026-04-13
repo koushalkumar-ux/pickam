@@ -27,11 +27,16 @@ async function bootstrap() {
     type: VersioningType.URI,
   });
 
+  const port = process.env.PORT ?? 3000;
+
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Pickam API')
     .setDescription('API documentation for all currently available endpoints')
     .setVersion('1.0.0')
     .addBearerAuth()
+    .addServer(`http://localhost:${port}/`, 'Local Environment')
+    .addServer('https://dev-api.pickam.com/', 'Development Environment')
+    .addServer('https://api.pickam.com/', 'Production Environment')
     .build();
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api/docs', app, swaggerDocument);
@@ -41,6 +46,6 @@ async function bootstrap() {
     transform: true,
   }));
   app.useGlobalFilters(new GlobalExceptionFilter());
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(port);
 }
 bootstrap();
