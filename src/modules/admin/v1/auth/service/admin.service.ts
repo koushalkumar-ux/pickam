@@ -8,11 +8,14 @@ import { AuthMessages } from '../../auth/enum/auth.enum';
 import { Admin, AdminDocument } from '../schemas/admin.schema';
 import { Role } from '../enum/role.enum';
 import { LoginDto, ForgotPasswordDto, ResetPasswordDto } from '../dto/auth.dto';
+import { BanUserDto } from '../dto/ban-user.dto';
+import { UserRepository } from '../../../../users/users/v1/repositories/user.repository';
 
 @Injectable()
 export class AdminService {
   constructor(
     private readonly adminRepository: AdminRepository,
+    private readonly userRepository: UserRepository,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) { }
@@ -179,5 +182,54 @@ export class AdminService {
     } catch (error) {
       throw new BadRequestException('Invalid or expired reset token');
     }
+  }
+
+  async banUser(userId: string, dto: BanUserDto) {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const updatedUser = await this.userRepository.update(userId, {
+      isBanned: true,
+      banInfo: {
+        reasonCode: dto.reasonCode,
+        reason: dto.reason,
+        notes: dto.notes || null,
+        bannedAt: new Date(),
+      },
+    });
+
+    return {
+      message: 'User banned successfully',
+      user: this.sanitizeUser(updatedUser),
+    };
+  }
+
+  async unbanUser(userId: string) {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const updatedUser = await this.userRepository.update(userId, {
+      isBanned: false,
+      banInfo: null,
+    });
+
+    return {
+      message: 'User unbanned successfully',
+      user: this.sanitizeUser(updatedUser),
+    };
+  }
+
+  private sanitizeUser(user: any) {
+    if (!user) {
+      return user;
+    }
+
+    const data = typeof user.toObject === 'function' ? user.toObject() : user;
+    const { password, passwordHistory, otp, otpExpires, ...safeUser } = data;
+    return safeUser;
   }
 }
