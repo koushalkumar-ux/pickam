@@ -124,10 +124,6 @@ export class AuthService {
       throw new BadRequestException(AuthMessages.ACCOUNT_NOT_VERIFIED);
     }
 
-    if (user.isBanned) {
-      throw new UnauthorizedException('Your account has been suspended. Contact support.');
-    }
-
     const isMatch = await bcrypt.compare(dto.password, user.password);
     if (!isMatch) {
       throw new UnauthorizedException(AuthMessages.INVALID_CREDENTIALS);
