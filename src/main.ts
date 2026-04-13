@@ -1,7 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
 import { join } from 'path';
@@ -26,16 +25,6 @@ async function bootstrap() {
   app.enableVersioning({
     type: VersioningType.URI,
   });
-
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('Pickam API')
-    .setDescription('API documentation for all currently available endpoints')
-    .setVersion('1.0.0')
-    .addBearerAuth()
-    .build();
-  const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, swaggerDocument);
-
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
     transform: true,
