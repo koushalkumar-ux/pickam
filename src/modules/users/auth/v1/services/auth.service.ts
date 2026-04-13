@@ -49,7 +49,18 @@ export class AuthService {
       otp,
       otpExpires,
       isVerified: false,
+      role: dto.role,
     });
+
+    // Create separate profile collection entry based on role
+    const userId = user._id.toString();
+    if (dto.role === 'staff_account') {
+      await this.userRepository.createStaffProfile(userId);
+    } else if (dto.role === 'buyer_account') {
+      await this.userRepository.createBuyerProfile(userId);
+    } else if (dto.role === 'shopmate_account') {
+      await this.userRepository.createShopmateProfile(userId);
+    }
 
     this.sendOtpEmail(user.email, otp).catch(err => {
       this.logger.error('Registration OTP Email failed', err.stack, 'AuthService.register');
@@ -135,7 +146,11 @@ export class AuthService {
   }
 
   generateToken(user: any) {
-    const payload = { sub: user._id || user.id, email: user.email };
+    const payload = { 
+      sub: user._id || user.id, 
+      email: user.email,
+      role: user.role,
+    };
 
     return {
       access_token: this.jwtService.sign(payload),

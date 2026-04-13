@@ -4,45 +4,51 @@ import {
   IsEmail,
   IsNotEmpty,
   IsString,
-  MinLength,Equals
+  MinLength,
+  Equals,
+  IsIn
 } from 'class-validator';
 
 export class RegisterDto {
   @IsString()
   @IsNotEmpty()
-  fullname: string;
+  fullname!: string;
 
   @IsEmail()
-  email: string;
+  email!: string;
 
   @IsString()
   @IsNotEmpty()
-  phone: string;
+  phone!: string;
 
   @IsString()
   @IsNotEmpty()
-  phoneCode: string;
+  phoneCode!: string;
 
   @IsString()
   @IsNotEmpty()
-  gender: string;
+  gender!: string;
 
   @IsDateString()
   @IsNotEmpty()
-  dob: string;
+  dob!: string;
 
   @IsString()
   @MinLength(6)
-  password: string;
+  password!: string;
+
+  @IsString()
+  @IsIn(['staff_account', 'buyer_account', 'shopmate_account'])
+  role!: string;
 
   @IsString()
   @IsNotEmpty()
-  confirmPassword: string;
+  confirmPassword!: string;
 
   @IsBoolean()
   isVerified: boolean = false;
 
   @IsBoolean()
   @Equals(true, { message: 'You must accept terms and conditions' })
-  termsAndConditions: boolean;
+  termsAndConditions!: boolean;
 }

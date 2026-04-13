@@ -1,38 +1,65 @@
 // Example of what needs to be added to your User class/schema
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Schema as MongooseSchema } from 'mongoose';
 
-@Schema()
+@Schema({ timestamps: true })
 export class User extends Document {
   @Prop({ required: true })
-  fullname: string; // Add this
+  fullname!: string;
 
   @Prop({ required: true, unique: true })
-  email: string;
+  email!: string;
 
   @Prop({ required: true })
-  phone: string; // Add this
+  phone!: string;
 
   @Prop({ required: true })
-  phoneCode: string; // Add this
+  phoneCode!: string;
 
   @Prop({ required: true })
-  gender: string; // Add this
+  gender!: string;
 
   @Prop({ required: true })
-  dob: string; // Add this (can also be Date type if preferred)
+  dob!: string;
 
   @Prop({ required: true })
-  password: string;
+  password!: string;
+
+  @Prop({ required: true, enum: ['staff_account', 'buyer_account', 'shopmate_account'] })
+  role!: string;
+
+  @Prop({ default: null })
+  profilePic!: string;
 
   @Prop({ default: false })
-  isVerified: boolean;
+  isVerified!: boolean;
 
   @Prop()
-  otp: string;
+  otp!: string;
 
   @Prop()
-  otpExpires: Date;
+  otpExpires!: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+
+@Schema({ timestamps: true })
+export class StaffProfile extends Document {
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
+  userId!: string;
+}
+export const StaffProfileSchema = SchemaFactory.createForClass(StaffProfile);
+
+@Schema({ timestamps: true })
+export class BuyerProfile extends Document {
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
+  userId!: string;
+}
+export const BuyerProfileSchema = SchemaFactory.createForClass(BuyerProfile);
+
+@Schema({ timestamps: true })
+export class ShopmateProfile extends Document {
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
+  userId!: string;
+}
+export const ShopmateProfileSchema = SchemaFactory.createForClass(ShopmateProfile);
